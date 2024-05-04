@@ -1,0 +1,41 @@
+import codecademylib3_seaborn
+import matplotlib.pyplot as plt
+from sklearn.svm import SVC
+from sklearn.model_selection import train_test_split
+from svm_visualization import draw_boundary
+from players import aaron_judge, jose_altuve, david_ortiz
+
+fig, ax = plt.subplots()
+
+def player_strike_zone_features(dataset,features):
+  dataset.type = dataset.type.map({'S':1,'B':0})
+  dataset=dataset.dropna(subset = features + ['type'])
+  plt.scatter(x = dataset.plate_x, y =  dataset.plate_z, c = dataset.type, cmap = plt.cm.coolwarm, alpha = 0.5 )
+  training_set, validation_set = train_test_split(dataset, random_state = 1)
+  bestAccuracy = {"score":0,"gamma":1, "C":1}
+  for gamma in range(1,7):
+    for C in range(1,7):
+      classifier = SVC(kernel = 'rbf',gamma = gamma, C = C)
+      classifier.fit(training_set[features],training_set['type'])
+      score=classifier.score(validation_set[features],validation_set['type'])
+      if score > bestAccuracy["score"]:
+        bestAccuracy["score"]= score
+        bestAccuracy["gamma"]=gamma
+        bestAccuracy["C"]=C
+  classifier = SVC(kernel = 'rbf',gamma = bestAccuracy["gamma"], C = bestAccuracy["C"])
+  classifier.fit(training_set[features],training_set['type'])
+  if len(features) == 2:
+    draw_boundary(ax, classifier)
+  ax.set_ylim(-2, 6)
+  ax.set_xlim(-3, 3)
+  bestAccuracy["score"]=(bestAccuracy["score"] * 100).round(2) # Format score to percent
+  ax.set_title("Name: {}.\n Features: {}\n Best: {}".format(dataset.player_name.unique()[0], features, bestAccuracy))
+  plt.show()
+
+
+playerlist = [aaron_judge,jose_altuve,david_ortiz]
+featureslist =[['plate_x', 'plate_z', 'strikes']]
+
+for player in playerlist: 
+  for features in featureslist:
+    player_strike_zone_features(player,features)
